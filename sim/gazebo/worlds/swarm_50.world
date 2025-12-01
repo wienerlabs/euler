@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <world name="euler_swarm">
+    <physics type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+    
+    <include>
+      <uri>model://sun</uri>
+    </include>
+    
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+    
+    <model name="drone_00"><pose>0 0 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_01"><pose>5 0 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_02"><pose>10 0 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_03"><pose>15 0 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_04"><pose>20 0 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_05"><pose>0 5 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_06"><pose>5 5 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_07"><pose>10 5 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_08"><pose>15 5 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_09"><pose>20 5 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_10"><pose>0 10 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_11"><pose>5 10 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_12"><pose>10 10 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_13"><pose>15 10 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_14"><pose>20 10 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_15"><pose>0 15 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_16"><pose>5 15 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_17"><pose>10 15 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_18"><pose>15 15 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_19"><pose>20 15 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_20"><pose>0 20 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_21"><pose>5 20 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_22"><pose>10 20 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_23"><pose>15 20 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_24"><pose>20 20 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_25"><pose>25 0 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_26"><pose>30 0 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_27"><pose>35 0 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_28"><pose>40 0 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_29"><pose>45 0 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_30"><pose>25 5 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_31"><pose>30 5 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_32"><pose>35 5 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_33"><pose>40 5 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_34"><pose>45 5 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_35"><pose>25 10 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_36"><pose>30 10 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_37"><pose>35 10 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_38"><pose>40 10 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_39"><pose>45 10 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_40"><pose>25 15 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_41"><pose>30 15 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_42"><pose>35 15 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_43"><pose>40 15 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_44"><pose>45 15 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_45"><pose>25 20 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_46"><pose>30 20 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_47"><pose>35 20 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_48"><pose>40 20 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    <model name="drone_49"><pose>45 20 0.5 0 0 0</pose><include><uri>model://euler_drone</uri></include></model>
+    
+    <gui fullscreen="0">
+      <camera name="user_camera">
+        <pose>25 -30 40 0 0.6 1.57</pose>
+      </camera>
+    </gui>
+  </world>
+</sdf>
+

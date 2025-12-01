@@ -51,6 +51,19 @@ $(BUILD_DIR)/test_udp.o: $(TEST_DIR)/test_udp.c
 	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+# Simulation
+SIM_BIN = $(BUILD_DIR)/swarm_sim
+
+sim: $(SIM_BIN)
+	./$(SIM_BIN) 10
+
+$(SIM_BIN): $(BUILD_DIR)/swarm_sim.o $(LIB)
+	$(CC) $(CFLAGS) $< $(LIB) $(LDFLAGS) -o $@
+
+$(BUILD_DIR)/swarm_sim.o: sim/swarm_sim.c
+	@mkdir -p $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
 $(TEST_BIN): $(TEST_OBJS) $(LIB)
 	$(CC) $(CFLAGS) $(TEST_OBJS) $(LIB) $(LDFLAGS) -o $@
 
