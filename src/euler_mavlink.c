@@ -129,3 +129,76 @@ void euler_mav_update_state(SwarmContext *swarm, const MavLocalPosition *pos) {
     swarm->self_state.vel_z = pos->vz;
 }
 
+MavResult euler_mav_receive(MavContext *ctx, MavMessageType *type, void *msg, size_t msg_size) {
+    if (!ctx->connected) return MAV_ERR_READ;
+
+#ifdef EULER_SIMULATION
+    uint8_t buf[280];
+    ssize_t n = read(ctx->fd, buf, sizeof(buf));
+    if (n <= 0) return MAV_ERR_READ;
+
+    if (buf[0] != 0xFD) return MAV_ERR_PARSE;
+
+    uint8_t payload_len = buf[1];
+    if (n < payload_len + 12) return MAV_ERR_PARSE;
+
+    uint8_t msg_id_low = buf[7];
+    *type = (MavMessageType)msg_id_low;
+
+    size_t copy_len = (size_t)payload_len < msg_size ? (size_t)payload_len : msg_size;
+    memcpy(msg, &buf[10], copy_len);
+
+    ctx->msg_received++;
+#else
+    (void)type;
+    (void)msg;
+    (void)msg_size;
+#endif
+
+    return MAV_OK;
+}
+
+static MavResult send_command_long(MavContext *ctx, uint16_t cmd, float p1, float p2, float p3, float p4, float p5, float p6, float p7) {
+    if (!ctx->connected) return MAV_ERR_WRITE;
+
+    uint8_t msg[45] = {0xFD, 33, 0, 0, 0, ctx->system_id, ctx->component_id, 76, 0, 0};
+
+    memcpy(&msg[10], &p1, 4);
+    memcpy(&msg[14], &p2, 4);
+    memcpy(&msg[18], &p3, 4);
+    memcpy(&msg[22], &p4, 4);
+    memcpy(&msg[26], &p5, 4);
+    memcpy(&msg[30], &p6, 4);
+    memcpy(&msg[34], &p7, 4);
+    memcpy(&msg[38], &cmd, 2);
+    msg[40] = 1;  // target_system
+    msg[41] = 1;  // target_component
+    msg[42] = 0;  // confirmation
+
+#ifdef EULER_SIMULATION
+    ssize_t written = write(ctx->fd, msg, sizeof(msg));
+    if (written != sizeof(msg)) return MAV_ERR_WRITE;
+#endif
+
+    ctx->msg_sent++;
+    return MAV_OK;
+}
+
+MavResult euler_mav_arm(MavContext *ctx, bool arm) {
+    return send_command_long(ctx, 400, arm ? 1.0f : 0.0f, 0, 0, 0, 0, 0, 0);
+}
+
+MavResult euler_mav_set_mode(MavContext *ctx, uint32_t mode) {
+    float mode_f;
+    memcpy(&mode_f, &mode, sizeof(float));
+    return send_command_long(ctx, 176, 1.0f, mode_f, 0, 0, 0, 0, 0);
+}
+
+MavResult euler_mav_takeoff(MavContext *ctx, float altitude) {
+    return send_command_long(ctx, 22, 0, 0, 0, 0, 0, 0, altitude);
+}
+
+MavResult euler_mav_land(MavContext *ctx) {
+    return send_command_long(ctx, 21, 0, 0, 0, 0, 0, 0, 0);
+}
+

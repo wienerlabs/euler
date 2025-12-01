@@ -35,6 +35,7 @@ extern int test_waypoint_queue(void);
 extern int test_mission_fsm(void);
 extern int test_formation_control(void);
 extern int test_compute_velocity(void);
+extern int test_mavlink_state_update(void);
 
 int main(void) {
     printf("\n=== EULER Unit Tests ===\n\n");
@@ -50,6 +51,7 @@ int main(void) {
     RUN_TEST(test_mission_fsm);
     RUN_TEST(test_formation_control);
     RUN_TEST(test_compute_velocity);
+    RUN_TEST(test_mavlink_state_update);
     
     printf("\n=== Results ===\n");
     printf("Tests run: %d\n", tests_run);

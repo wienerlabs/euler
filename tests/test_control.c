@@ -1,5 +1,6 @@
 #include "euler_control.h"
 #include "euler_mission.h"
+#include "euler_mavlink.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -159,6 +160,26 @@ int test_compute_velocity(void) {
     float speed = euler_vec3_magnitude(output.velocity_cmd);
     TEST_ASSERT(speed <= EULER_MAX_SPEED_MS + 0.01f, "Velocity should not exceed max speed");
     TEST_ASSERT(output.navigation_force > 0.0f, "Navigation force should be non-zero");
+
+    return 0;
+}
+
+int test_mavlink_state_update(void) {
+    SwarmContext swarm = {0};
+    MavLocalPosition pos = {
+        .time_boot_ms = 1000,
+        .x = 10.5f, .y = 20.5f, .z = 15.0f,
+        .vx = 1.0f, .vy = 2.0f, .vz = 0.5f
+    };
+
+    euler_mav_update_state(&swarm, &pos);
+
+    TEST_ASSERT(FLOAT_EQ(swarm.self_state.pos_x, 10.5f), "Position X should match");
+    TEST_ASSERT(FLOAT_EQ(swarm.self_state.pos_y, 20.5f), "Position Y should match");
+    TEST_ASSERT(FLOAT_EQ(swarm.self_state.pos_z, 15.0f), "Position Z should match");
+    TEST_ASSERT(FLOAT_EQ(swarm.self_state.vel_x, 1.0f), "Velocity X should match");
+    TEST_ASSERT(FLOAT_EQ(swarm.self_state.vel_y, 2.0f), "Velocity Y should match");
+    TEST_ASSERT(FLOAT_EQ(swarm.self_state.vel_z, 0.5f), "Velocity Z should match");
 
     return 0;
 }
