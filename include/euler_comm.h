@@ -3,6 +3,7 @@
 
 #include "euler_types.h"
 #include <stddef.h>
+#include <pthread.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -33,7 +34,9 @@ typedef struct {
     uint16_t port;
     uint32_t broadcast_addr;
     StateRingBuffer rx_buffer;
-    bool running;
+    volatile bool running;
+    pthread_t rx_thread;
+    bool thread_active;
     uint32_t tx_count;
     uint32_t rx_count;
     uint32_t crc_errors;
@@ -44,6 +47,9 @@ void euler_comm_shutdown(CommContext *ctx);
 CommResult euler_comm_broadcast(CommContext *ctx, const DroneState *state);
 CommResult euler_comm_receive(CommContext *ctx, DroneState *state);
 bool euler_comm_has_pending(const CommContext *ctx);
+CommResult euler_comm_start_receiver(CommContext *ctx);
+void euler_comm_stop_receiver(CommContext *ctx);
+bool euler_comm_pop_neighbor(CommContext *ctx, DroneState *state);
 
 uint16_t euler_crc16(const void *data, size_t len);
 CommResult euler_serialize_state(const DroneState *state, uint8_t *buf, size_t len);

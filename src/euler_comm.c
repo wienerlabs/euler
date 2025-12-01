@@ -260,6 +260,42 @@ bool euler_comm_has_pending(const CommContext *ctx) {
     return !euler_ring_empty(&ctx->rx_buffer);
 }
 
+static void* receiver_thread_func(void *arg) {
+    CommContext *ctx = (CommContext *)arg;
+
+    while (ctx->running) {
+        DroneState state;
+        if (euler_comm_receive(ctx, &state) == COMM_OK) {
+            euler_ring_push(&ctx->rx_buffer, &state);
+        }
+        usleep(1000);
+    }
+    return NULL;
+}
+
+CommResult euler_comm_start_receiver(CommContext *ctx) {
+    if (ctx->thread_active) return COMM_OK;
+
+    ctx->running = true;
+    if (pthread_create(&ctx->rx_thread, NULL, receiver_thread_func, ctx) != 0) {
+        return COMM_ERR_SOCKET;
+    }
+    ctx->thread_active = true;
+    return COMM_OK;
+}
+
+void euler_comm_stop_receiver(CommContext *ctx) {
+    if (!ctx->thread_active) return;
+
+    ctx->running = false;
+    pthread_join(ctx->rx_thread, NULL);
+    ctx->thread_active = false;
+}
+
+bool euler_comm_pop_neighbor(CommContext *ctx, DroneState *state) {
+    return euler_ring_pop(&ctx->rx_buffer, state);
+}
+
 #else
 
 CommResult euler_comm_init(CommContext *ctx, uint16_t port) {
@@ -283,6 +319,20 @@ CommResult euler_comm_receive(CommContext *ctx, DroneState *state) {
 
 bool euler_comm_has_pending(const CommContext *ctx) {
     (void)ctx;
+    return false;
+}
+
+CommResult euler_comm_start_receiver(CommContext *ctx) {
+    (void)ctx;
+    return COMM_OK;
+}
+
+void euler_comm_stop_receiver(CommContext *ctx) {
+    (void)ctx;
+}
+
+bool euler_comm_pop_neighbor(CommContext *ctx, DroneState *state) {
+    (void)ctx; (void)state;
     return false;
 }
 
