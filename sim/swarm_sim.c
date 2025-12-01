@@ -71,11 +71,13 @@ static void* drone_thread(void *arg) {
         drone->swarm.self_state.pos_x = drone->pos.x;
         drone->swarm.self_state.pos_y = drone->pos.y;
         drone->swarm.self_state.pos_z = drone->pos.z;
-        Vec3 avoidance = euler_compute_total_avoidance(&drone->swarm);
-        
-        drone->vel.x += avoidance.x * DT;
-        drone->vel.y += avoidance.y * DT;
-        drone->vel.z += avoidance.z * DT;
+
+        ControlOutput output;
+        euler_compute_velocity(&drone->swarm, DT, &output);
+
+        drone->vel.x += output.velocity_cmd.x * DT;
+        drone->vel.y += output.velocity_cmd.y * DT;
+        drone->vel.z += output.velocity_cmd.z * DT;
         
         float speed = sqrtf(drone->vel.x*drone->vel.x + 
                            drone->vel.y*drone->vel.y + 
@@ -138,6 +140,12 @@ int main(int argc, char *argv[]) {
         euler_comm_start_receiver(&g_drones[i].comm);
         memset(&g_drones[i].swarm, 0, sizeof(SwarmContext));
         g_drones[i].swarm.drone_id = (uint8_t)i;
+        g_drones[i].swarm.leader_id = 0;
+        g_drones[i].swarm.formation_offset = (Vec3){(float)(i % 5) * 3.0f, (float)(i / 5) * 3.0f, 0.0f};
+
+        euler_pid_init(&g_drones[i].swarm.pid_x, EULER_PID_KP, EULER_PID_KI, EULER_PID_KD, 10.0f);
+        euler_pid_init(&g_drones[i].swarm.pid_y, EULER_PID_KP, EULER_PID_KI, EULER_PID_KD, 10.0f);
+        euler_pid_init(&g_drones[i].swarm.pid_z, EULER_PID_KP, EULER_PID_KI, EULER_PID_KD, 10.0f);
         
         pthread_create(&g_drones[i].thread, NULL, drone_thread, &g_drones[i]);
     }

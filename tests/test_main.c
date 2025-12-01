@@ -33,10 +33,12 @@ extern int test_collision_avoidance(void);
 extern int test_pid_controller(void);
 extern int test_waypoint_queue(void);
 extern int test_mission_fsm(void);
+extern int test_formation_control(void);
+extern int test_compute_velocity(void);
 
 int main(void) {
     printf("\n=== EULER Unit Tests ===\n\n");
-    
+
     RUN_TEST(test_drone_state_size);
     RUN_TEST(test_vec3_operations);
     RUN_TEST(test_ring_buffer);
@@ -46,6 +48,8 @@ int main(void) {
     RUN_TEST(test_pid_controller);
     RUN_TEST(test_waypoint_queue);
     RUN_TEST(test_mission_fsm);
+    RUN_TEST(test_formation_control);
+    RUN_TEST(test_compute_velocity);
     
     printf("\n=== Results ===\n");
     printf("Tests run: %d\n", tests_run);

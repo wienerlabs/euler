@@ -1,5 +1,7 @@
 #include "euler_control.h"
+#include "euler_mission.h"
 #include <math.h>
+#include <stddef.h>
 
 Vec3 euler_vec3_add(Vec3 a, Vec3 b) {
     return (Vec3){a.x + b.x, a.y + b.y, a.z + b.z};
@@ -130,5 +132,80 @@ void euler_apply_deadband(Vec3 *velocity, float threshold) {
     if (fabsf(velocity->x) < threshold) velocity->x = 0.0f;
     if (fabsf(velocity->y) < threshold) velocity->y = 0.0f;
     if (fabsf(velocity->z) < threshold) velocity->z = 0.0f;
+}
+
+Vec3 euler_formation_target(const SwarmContext *swarm) {
+    Vec3 leader_pos = {0.0f, 0.0f, 0.0f};
+    bool found = false;
+
+    for (uint8_t i = 0; i < swarm->neighbor_count; i++) {
+        if (!swarm->neighbors[i].active) continue;
+        if (swarm->neighbors[i].drone_id == swarm->leader_id) {
+            leader_pos.x = swarm->neighbors[i].last_state.pos_x;
+            leader_pos.y = swarm->neighbors[i].last_state.pos_y;
+            leader_pos.z = swarm->neighbors[i].last_state.pos_z;
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        return (Vec3){
+            swarm->self_state.pos_x + swarm->formation_offset.x,
+            swarm->self_state.pos_y + swarm->formation_offset.y,
+            swarm->self_state.pos_z + swarm->formation_offset.z
+        };
+    }
+
+    return euler_vec3_add(leader_pos, swarm->formation_offset);
+}
+
+ControlResult euler_formation_control(SwarmContext *swarm, float dt, Vec3 *velocity_cmd) {
+    Vec3 self_pos = {swarm->self_state.pos_x, swarm->self_state.pos_y, swarm->self_state.pos_z};
+    Vec3 target = euler_formation_target(swarm);
+
+    float error_x = target.x - self_pos.x;
+    float error_y = target.y - self_pos.y;
+    float error_z = target.z - self_pos.z;
+
+    velocity_cmd->x = euler_pid_update(&swarm->pid_x, error_x, dt);
+    velocity_cmd->y = euler_pid_update(&swarm->pid_y, error_y, dt);
+    velocity_cmd->z = euler_pid_update(&swarm->pid_z, error_z, dt);
+
+    euler_clamp_velocity(velocity_cmd, EULER_MAX_SPEED_MS);
+
+    return CTRL_OK;
+}
+
+ControlResult euler_compute_velocity(SwarmContext *swarm, float dt, ControlOutput *output) {
+    Vec3 self_pos = {swarm->self_state.pos_x, swarm->self_state.pos_y, swarm->self_state.pos_z};
+
+    ControlResult res = euler_collision_check(swarm, &output->min_neighbor_dist);
+    output->collision_warning = (res == CTRL_ERR_COLLISION_IMMINENT);
+
+    Vec3 avoidance = euler_compute_total_avoidance(swarm);
+    output->avoidance_force = euler_vec3_magnitude(avoidance);
+
+    Vec3 navigation = {0.0f, 0.0f, 0.0f};
+    Waypoint *wp = euler_waypoint_current(&swarm->mission);
+    if (wp != NULL) {
+        navigation = euler_compute_waypoint_attraction(self_pos, wp->position, EULER_NAV_WEIGHT);
+    }
+    output->navigation_force = euler_vec3_magnitude(navigation);
+
+    Vec3 formation = {0.0f, 0.0f, 0.0f};
+    if (swarm->leader_id != swarm->drone_id) {
+        euler_formation_control(swarm, dt, &formation);
+    }
+
+    output->velocity_cmd = euler_vec3_add(avoidance, navigation);
+    output->velocity_cmd = euler_vec3_add(output->velocity_cmd, formation);
+
+    output->velocity_cmd = euler_vec3_scale(output->velocity_cmd, EULER_BLEND_RATIO);
+
+    euler_clamp_velocity(&output->velocity_cmd, EULER_MAX_SPEED_MS);
+    euler_apply_deadband(&output->velocity_cmd, 0.1f);
+
+    return res;
 }
 

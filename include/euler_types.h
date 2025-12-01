@@ -25,6 +25,9 @@ extern "C" {
 #define EULER_REPULSION_K         5.0f
 #define EULER_AVOIDANCE_WEIGHT    0.7f
 #define EULER_NAVIGATION_WEIGHT   0.3f
+#define EULER_NAV_WEIGHT          0.5f
+#define EULER_BLEND_RATIO         0.7f
+#define EULER_MAX_SPEED_MS        5.0f
 
 #define EULER_PID_KP              1.2f
 #define EULER_PID_KI              0.05f
