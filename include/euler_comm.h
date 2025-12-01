@@ -2,6 +2,7 @@
 #define EULER_COMM_H
 
 #include "euler_types.h"
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {

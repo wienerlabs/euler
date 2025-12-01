@@ -1,5 +1,6 @@
 #include "euler_comm.h"
 #include <string.h>
+#include <stddef.h>
 
 #ifdef EULER_SIMULATION
 #include <sys/socket.h>
@@ -80,3 +81,71 @@ bool euler_ring_pop(StateRingBuffer *rb, DroneState *state) {
     return true;
 }
 
+CommResult euler_serialize_state(const DroneState *state, uint8_t *buf, size_t len) {
+    if (len < EULER_PACKET_SIZE) return COMM_ERR_SERIALIZE;
+    memcpy(buf, state, EULER_PACKET_SIZE - 2);
+    uint16_t crc = euler_crc16(buf, EULER_PACKET_SIZE - 2);
+    buf[EULER_PACKET_SIZE - 2] = (uint8_t)(crc & 0xFF);
+    buf[EULER_PACKET_SIZE - 1] = (uint8_t)(crc >> 8);
+    return COMM_OK;
+}
+
+CommResult euler_deserialize_state(const uint8_t *buf, size_t len, DroneState *state) {
+    if (len < EULER_PACKET_SIZE) return COMM_ERR_SERIALIZE;
+    uint16_t received_crc = (uint16_t)(buf[EULER_PACKET_SIZE - 2] |
+                                        (buf[EULER_PACKET_SIZE - 1] << 8));
+    uint16_t calc_crc = euler_crc16(buf, EULER_PACKET_SIZE - 2);
+    if (received_crc != calc_crc) return COMM_ERR_CRC;
+    memcpy(state, buf, EULER_PACKET_SIZE);
+    state->crc = received_crc;
+    return COMM_OK;
+}
+
+void euler_neighbor_update(SwarmContext *swarm, const DroneState *state, uint32_t now_ms) {
+    if (state->drone_id == swarm->drone_id) return;
+
+    NeighborEntry *entry = euler_neighbor_find(swarm, state->drone_id);
+    if (!entry) {
+        for (uint8_t i = 0; i < EULER_MAX_DRONES; i++) {
+            if (!swarm->neighbors[i].active) {
+                entry = &swarm->neighbors[i];
+                entry->drone_id = state->drone_id;
+                entry->active = true;
+                entry->history.head = 0;
+                entry->history.count = 0;
+                swarm->neighbor_count++;
+                break;
+            }
+        }
+    }
+    if (!entry) return;
+
+    entry->last_state = *state;
+    entry->last_seen_ms = now_ms;
+
+    PositionHistory *h = &entry->history;
+    h->positions[h->head] = (Vec3){state->pos_x, state->pos_y, state->pos_z};
+    h->timestamps[h->head] = now_ms;
+    h->head = (uint8_t)((h->head + 1) % EULER_POSITION_HISTORY);
+    if (h->count < EULER_POSITION_HISTORY) h->count++;
+}
+
+NeighborEntry* euler_neighbor_find(SwarmContext *swarm, uint8_t drone_id) {
+    for (uint8_t i = 0; i < EULER_MAX_DRONES; i++) {
+        if (swarm->neighbors[i].active && swarm->neighbors[i].drone_id == drone_id) {
+            return &swarm->neighbors[i];
+        }
+    }
+    return NULL;
+}
+
+void euler_neighbor_prune(SwarmContext *swarm, uint32_t now_ms, uint32_t timeout_ms) {
+    for (uint8_t i = 0; i < EULER_MAX_DRONES; i++) {
+        if (swarm->neighbors[i].active) {
+            if ((now_ms - swarm->neighbors[i].last_seen_ms) > timeout_ms) {
+                swarm->neighbors[i].active = false;
+                swarm->neighbor_count--;
+            }
+        }
+    }
+}

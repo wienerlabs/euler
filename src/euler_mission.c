@@ -1,5 +1,6 @@
 #include "euler_mission.h"
 #include "euler_control.h"
+#include <stddef.h>
 
 static const char* PHASE_NAMES[] = {
     "INIT", "ARMED", "TAKEOFF", "CRUISE", "EXECUTE", "RTL", "LANDING", "COMPLETE"

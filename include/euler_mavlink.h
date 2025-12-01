@@ -2,6 +2,7 @@
 #define EULER_MAVLINK_H
 
 #include "euler_types.h"
+#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
