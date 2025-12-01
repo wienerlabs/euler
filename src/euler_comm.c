@@ -8,6 +8,8 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
+#include <pthread.h>
 #endif
 
 static const uint16_t CRC16_TABLE[256] = {
@@ -149,3 +151,139 @@ void euler_neighbor_prune(SwarmContext *swarm, uint32_t now_ms, uint32_t timeout
         }
     }
 }
+
+#ifdef EULER_SIMULATION
+
+CommResult euler_comm_init(CommContext *ctx, uint16_t port) {
+    memset(ctx, 0, sizeof(CommContext));
+    ctx->port = port;
+    euler_ring_init(&ctx->rx_buffer);
+
+    ctx->socket_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (ctx->socket_fd < 0) return COMM_ERR_SOCKET;
+
+    int broadcast = 1;
+    if (setsockopt(ctx->socket_fd, SOL_SOCKET, SO_BROADCAST,
+                   &broadcast, sizeof(broadcast)) < 0) {
+        close(ctx->socket_fd);
+        return COMM_ERR_SOCKET;
+    }
+
+    int reuse = 1;
+    setsockopt(ctx->socket_fd, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+#ifdef SO_REUSEPORT
+    setsockopt(ctx->socket_fd, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
+#endif
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(port);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(ctx->socket_fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
+        close(ctx->socket_fd);
+        return COMM_ERR_BIND;
+    }
+
+    int flags = fcntl(ctx->socket_fd, F_GETFL, 0);
+    fcntl(ctx->socket_fd, F_SETFL, flags | O_NONBLOCK);
+
+    ctx->broadcast_addr = inet_addr("127.0.0.1");
+    ctx->running = true;
+    ctx->tx_count = 0;
+    ctx->rx_count = 0;
+    ctx->crc_errors = 0;
+    return COMM_OK;
+}
+
+void euler_comm_shutdown(CommContext *ctx) {
+    ctx->running = false;
+    if (ctx->socket_fd >= 0) {
+        close(ctx->socket_fd);
+        ctx->socket_fd = -1;
+    }
+}
+
+CommResult euler_comm_broadcast(CommContext *ctx, const DroneState *state) {
+    if (!ctx->running || ctx->socket_fd < 0) return COMM_ERR_SOCKET;
+
+    uint8_t buf[EULER_PACKET_SIZE];
+    CommResult res = euler_serialize_state(state, buf, sizeof(buf));
+    if (res != COMM_OK) return res;
+
+    struct sockaddr_in dest;
+    memset(&dest, 0, sizeof(dest));
+    dest.sin_family = AF_INET;
+    dest.sin_port = htons(ctx->port);
+    dest.sin_addr.s_addr = ctx->broadcast_addr;
+
+    ssize_t sent = sendto(ctx->socket_fd, buf, EULER_PACKET_SIZE, 0,
+                          (struct sockaddr *)&dest, sizeof(dest));
+    if (sent != EULER_PACKET_SIZE) {
+        return COMM_ERR_SEND;
+    }
+
+    ctx->tx_count = ctx->tx_count + 1;
+    return COMM_OK;
+}
+
+CommResult euler_comm_receive(CommContext *ctx, DroneState *state) {
+    if (!ctx->running || ctx->socket_fd < 0) return COMM_ERR_SOCKET;
+
+    uint8_t buf[EULER_PACKET_SIZE];
+    struct sockaddr_in src;
+    socklen_t src_len = sizeof(src);
+
+    ssize_t received = recvfrom(ctx->socket_fd, buf, sizeof(buf), 0,
+                                 (struct sockaddr *)&src, &src_len);
+
+    if (received < 0) {
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            return COMM_ERR_RECV;
+        }
+        return COMM_ERR_RECV;
+    }
+
+    if (received != EULER_PACKET_SIZE) return COMM_ERR_RECV;
+
+    CommResult res = euler_deserialize_state(buf, (size_t)received, state);
+    if (res == COMM_OK) {
+        ctx->rx_count++;
+    } else if (res == COMM_ERR_CRC) {
+        ctx->crc_errors++;
+    }
+    return res;
+}
+
+bool euler_comm_has_pending(const CommContext *ctx) {
+    return !euler_ring_empty(&ctx->rx_buffer);
+}
+
+#else
+
+CommResult euler_comm_init(CommContext *ctx, uint16_t port) {
+    (void)ctx; (void)port;
+    return COMM_OK;
+}
+
+void euler_comm_shutdown(CommContext *ctx) {
+    (void)ctx;
+}
+
+CommResult euler_comm_broadcast(CommContext *ctx, const DroneState *state) {
+    (void)ctx; (void)state;
+    return COMM_OK;
+}
+
+CommResult euler_comm_receive(CommContext *ctx, DroneState *state) {
+    (void)ctx; (void)state;
+    return COMM_ERR_RECV;
+}
+
+bool euler_comm_has_pending(const CommContext *ctx) {
+    (void)ctx;
+    return false;
+}
+
+#endif

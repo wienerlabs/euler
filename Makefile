@@ -1,6 +1,7 @@
 CC = gcc
 CFLAGS = -std=c11 -Wall -Wextra -Wpedantic -Werror -I./include
 CFLAGS += -Wconversion -Wsign-conversion -Wdouble-promotion
+CFLAGS += -DEULER_SIMULATION=1
 LDFLAGS = -lm -lpthread
 
 SRC_DIR = src
@@ -11,7 +12,7 @@ INCLUDE_DIR = include
 SRCS = $(wildcard $(SRC_DIR)/*.c)
 OBJS = $(SRCS:$(SRC_DIR)/%.c=$(BUILD_DIR)/%.o)
 
-TEST_SRCS = $(wildcard $(TEST_DIR)/*.c)
+TEST_SRCS = $(filter-out $(TEST_DIR)/test_udp.c, $(wildcard $(TEST_DIR)/*.c))
 TEST_OBJS = $(TEST_SRCS:$(TEST_DIR)/%.c=$(BUILD_DIR)/%.o)
 
 LIB = $(BUILD_DIR)/libeuler.a
@@ -35,8 +36,20 @@ $(BUILD_DIR)/%.o: $(TEST_DIR)/%.c
 	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+UDP_TEST_BIN = $(BUILD_DIR)/test_udp
+
 test: $(TEST_BIN)
 	./$(TEST_BIN)
+
+test-udp: $(UDP_TEST_BIN)
+	./$(UDP_TEST_BIN)
+
+$(UDP_TEST_BIN): $(BUILD_DIR)/test_udp.o $(LIB)
+	$(CC) $(CFLAGS) $< $(LIB) $(LDFLAGS) -o $@
+
+$(BUILD_DIR)/test_udp.o: $(TEST_DIR)/test_udp.c
+	@mkdir -p $(BUILD_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
 
 $(TEST_BIN): $(TEST_OBJS) $(LIB)
 	$(CC) $(CFLAGS) $(TEST_OBJS) $(LIB) $(LDFLAGS) -o $@
